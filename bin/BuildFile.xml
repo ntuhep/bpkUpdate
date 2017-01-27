@@ -1,0 +1,5 @@
+<use name="root"/>
+<use name="boost_program_options"/>
+<use name="bpkFrameWork/bpkUpdate"/>
+
+<bin name="bpkUpdate" file="bpkUpdate.cc"/>
