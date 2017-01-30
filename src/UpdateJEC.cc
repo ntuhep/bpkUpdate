@@ -80,7 +80,7 @@ UpdateJEC( TTree* oldntuple, TTree* newntuple, const opt::variables_map& arg )
   evtinfo.Register( oldntuple, "EvtInfo" );
 
   for( int i = 0; i <  oldntuple->GetEntries() && i != MaxEvent( arg ); ++i ){
-    cout << "\rRunning event: " <<  i+1 << flush;
+    cout << "Running event: " <<  i+1 << endl;
     oldntuple->GetEntry( i );
 
     CorrectJet( ak4jet, ak4cor, evtinfo.Rho );
