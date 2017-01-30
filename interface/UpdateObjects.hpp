@@ -23,6 +23,7 @@ boost::program_options::variables_map       CheckCommon(
 std::vector<std::string> InputFiles( const boost::program_options::variables_map& );
 std::string              OutputFile( const boost::program_options::variables_map& );
 int                      MaxEvent(   const boost::program_options::variables_map& );
+int                      ReportEvent(const boost::program_options::variables_map& );
 
 // Specific options for JEC related updates
 boost::program_options::options_description JECOptions();

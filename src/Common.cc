@@ -25,7 +25,8 @@ CommonOptions()
   common.add_options()
     ( "input,i", opt::value<vector<string> >()->multitoken(), "List of input files to read" )
     ( "output,o", opt::value<string>(), "Output file to store results" )
-    ( "maxevent,m", opt::value<int>(), "Maximum number of events to process" )
+    ( "maxevent,m", opt::value<int>()->default_value(10000), "Maximum number of events to process" )
+    ( "report,r", opt::value<int>()->default_value(1000), "Report every r events" )
     ( "help,h", "Print help message" )
   ;
   return common;
@@ -77,8 +78,12 @@ string OutputFile( const opt::variables_map& arg )
 
 int MaxEvent( const opt::variables_map& arg )
 {
-  if( arg.count("maxevent") ){
-    return arg["maxevent"].as<int>();
-  }
-  return 100; // Default value
+  return arg["maxevent"].as<int>();
+}
+
+/******************************************************************************/
+
+int ReportEvent( const opt::variables_map& arg )
+{
+  return arg["report"].as<int>();
 }
