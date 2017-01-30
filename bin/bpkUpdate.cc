@@ -62,13 +62,16 @@ main( int argc, char* argv[] )
   /*******************************************************************************
   *******************************************************************************/
   // Run level tree corrections
-  TTree* newntuple_run = oldntuple_run->CloneTree( 0 );
+  if( oldntuple_run->GetTree() ){// Only run if run tree exisits
+    TTree* newntuple_run = oldntuple_run->CloneTree( 0 );
 
-  for( int i = 0; i < oldntuple_run->GetEntries(); ++i ){
-    newntuple_run->Fill();// Filling regardless
+    for( int i = 0; i < oldntuple_run->GetEntries(); ++i ){
+      newntuple_run->Fill();// Filling regardless
+    }
+
+    newntuple_run->AutoSave();
+
   }
-
-  newntuple_run->AutoSave();
 
   // Trusting ROOT to autoclean the pointer objects.
   return 0;
