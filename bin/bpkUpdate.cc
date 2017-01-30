@@ -49,6 +49,13 @@ main( int argc, char* argv[] )
   *******************************************************************************/
   // Creating new file and tree
   TFile* newfile   = TFile::Open( OutputFile( arg ).c_str(), "RECREATE" );
+  newfile->mkdir("bprimeKit");
+  newfile->cd("bprimeKit");
+
+
+  /******************************************************************************/
+  /******************************************************************************/
+  // Event tree updating
   TTree* newntuple = oldntuple->CloneTree( 0 );
 
   try {
@@ -62,7 +69,7 @@ main( int argc, char* argv[] )
   /*******************************************************************************
   *******************************************************************************/
   // Run level tree corrections
-  if( oldntuple_run->GetTree() ){// Only run if run tree exisits
+  if( oldntuple_run->GetEntries() ){// Only run if run tree has more than one entry
     TTree* newntuple_run = oldntuple_run->CloneTree( 0 );
 
     for( int i = 0; i < oldntuple_run->GetEntries(); ++i ){
@@ -70,7 +77,6 @@ main( int argc, char* argv[] )
     }
 
     newntuple_run->AutoSave();
-
   }
 
   // Trusting ROOT to autoclean the pointer objects.
