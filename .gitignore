@@ -9,7 +9,6 @@
 *.swp 
 
 # General data file exclusions
-*.txt 
 *.root
 *.log
 log*
