@@ -68,6 +68,8 @@ UpdateJEC( TTree* oldntuple, TTree* newntuple, const opt::variables_map& arg )
   // https://twiki.cern.ch/twiki/bin/view/CMSPublic/WorkBookJetEnergyCorrections#JetEnCorFWLite
   JetChanger ak4cor = GetCorrector( arg, "AK4PFchs" );
   JetChanger ak8cor = GetCorrector( arg, "AK8PFchs" );
+  JetChanger ak4puppicor = GetCorrector( arg, "AK4PFPuppi" );
+  JetChanger ak8puppicor = GetCorrector( arg, "AK8PFPuppi" );
 
   // Setting up Jet info branches
   JetInfoBranches ak4jet;
@@ -76,6 +78,15 @@ UpdateJEC( TTree* oldntuple, TTree* newntuple, const opt::variables_map& arg )
   ak8jet.Register( oldntuple, "JetAK8Info" );
   JetInfoBranches ca8jet;
   ca8jet.Register( oldntuple, "JetCA8Info" );
+  JetInfoBranches ak4jetpuppi;
+  ak4jetpuppi.Register( oldntuple, "JetInfoPuppi" );
+  JetInfoBranches ak8jetpuppi;
+  ak8jetpuppi.Register( oldntuple, "JetAK8Puppi" );
+  JetInfoBranches ca8jetpuppi;
+  ca8jetpuppi.Register( oldntuple, "JetCA8Puppi" );
+
+
+
   EvtInfoBranches evtinfo;
   evtinfo.Register( oldntuple, "EvtInfo" );
 
@@ -88,6 +99,10 @@ UpdateJEC( TTree* oldntuple, TTree* newntuple, const opt::variables_map& arg )
     CorrectJet( ak4jet, ak4cor, evtinfo.Rho );
     CorrectJet( ak8jet, ak8cor, evtinfo.Rho );
     CorrectJet( ca8jet, ak8cor, evtinfo.Rho );
+    CorrectJet( ak4jetpuppi, ak4puppicor, evtinfo.Rho );
+    CorrectJet( ak8jetpuppi, ak8puppicor, evtinfo.Rho );
+    CorrectJet( ca8jetpuppi, ak8puppicor, evtinfo.Rho );
+
 
     newntuple->Fill();// Adding modified entry to new ntuple
   }
@@ -98,6 +113,10 @@ UpdateJEC( TTree* oldntuple, TTree* newntuple, const opt::variables_map& arg )
   delete ak4cor.jecunc;
   delete ak8cor.jec;
   delete ak8cor.jecunc;
+  delete ak4puppicor.jec;
+  delete ak4puppicor.jecunc;
+  delete ak8puppicor.jec;
+  delete ak8puppicor.jecunc;
 
 }
 
@@ -134,11 +153,11 @@ JECVersion( const opt::variables_map& arg )
 JetChanger
 GetCorrector( const opt::variables_map& arg, const string& jettype  )
 {
-  const string l1file  = datadir + JECVersion( arg ) + "_L1FastJet_"+ jettype + ".txt";
-  const string l2file  = datadir + JECVersion( arg ) + "_L2Relative_"+ jettype + ".txt";
-  const string l3file  = datadir + JECVersion( arg ) + "_L3Absolute_"+ jettype + ".txt";
-  const string l23file = datadir + JECVersion( arg ) + "_L2L3Residual_"+ jettype + ".txt";
-  const string uncfile = datadir + JECVersion( arg ) + "_Uncertainty_"+ jettype + ".txt";
+  const string l1file  = datadir + JECVersion( arg ) + "/" + JECVersion( arg ) + "_L1FastJet_"+ jettype + ".txt";
+  const string l2file  = datadir + JECVersion( arg ) + "/" + JECVersion( arg ) + "_L2Relative_"+ jettype + ".txt";
+  const string l3file  = datadir + JECVersion( arg ) + "/" + JECVersion( arg ) + "_L3Absolute_"+ jettype + ".txt";
+  const string l23file = datadir + JECVersion( arg ) + "/" + JECVersion( arg ) + "_L2L3Residual_"+ jettype + ".txt";
+  const string uncfile = datadir + JECVersion( arg ) + "/" + JECVersion( arg ) + "_Uncertainty_"+ jettype + ".txt";
   if( !boost::filesystem::exists( l1file ) ||
       !boost::filesystem::exists( l2file ) ||
       !boost::filesystem::exists( l3file ) ||
@@ -170,14 +189,14 @@ CorrectJet( JetInfoBranches& jetinfo, JetChanger& cor, const double rho )
   for( int i = 0; i < jetinfo.Size; ++i ){
     // Getting Jet energy correction
     cor.jec->setJetEta( jetinfo.Eta[i] );
-    cor.jec->setJetPt( jetinfo.Pt[i] );
+    cor.jec->setJetPt( jetinfo.PtCorrRaw[i] );
     cor.jec->setJetA( jetinfo.Area[i] );
     cor.jec->setRho( rho );
     jetinfo.Unc[i] = cor.jec->getCorrection();
 
     // Getting jet energy correction uncertainty
     cor.jecunc->setJetEta( jetinfo.Eta[i] );
-    cor.jecunc->setJetPt( jetinfo.Pt[i] * jetinfo.Unc[i] );
+    cor.jecunc->setJetPt( jetinfo.PtCorrRaw[i] * jetinfo.Unc[i] );
     jetinfo.JesUnc[i] = cor.jecunc->getUncertainty(true);
   }
 }
