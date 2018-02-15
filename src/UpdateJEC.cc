@@ -66,28 +66,34 @@ UpdateJEC( TTree* oldntuple, TTree* newntuple, const opt::variables_map& arg )
 
   // Getting jet energy correctors
   // https://twiki.cern.ch/twiki/bin/view/CMSPublic/WorkBookJetEnergyCorrections#JetEnCorFWLite
-  JetChanger ak4cor = GetCorrector( arg, "AK4PFchs" );
-  JetChanger ak8cor = GetCorrector( arg, "AK8PFchs" );
-  JetChanger ak4puppicor = GetCorrector( arg, "AK4PFPuppi" );
-  JetChanger ak8puppicor = GetCorrector( arg, "AK8PFPuppi" );
-
-  // Setting up Jet info branches
+  JetChanger ak4cor;
+  JetChanger ak8cor;
+  JetChanger ak4puppicor;
+  JetChanger ak8puppicor;
   JetInfoBranches ak4jet;
-  ak4jet.Register( oldntuple, "JetInfo" );
   JetInfoBranches ak8jet;
-  ak8jet.Register( oldntuple, "JetAK8Info" );
   JetInfoBranches ca8jet;
-  ca8jet.Register( oldntuple, "JetCA8Info" );
-  JetInfoBranches ak4jetpuppi;
-  ak4jetpuppi.Register( oldntuple, "JetInfoPuppi" );
+  JetInfoBranches ak4jetpuppi; 
   JetInfoBranches ak8jetpuppi;
-  ak8jetpuppi.Register( oldntuple, "JetAK8Puppi" );
   JetInfoBranches ca8jetpuppi;
-  ca8jetpuppi.Register( oldntuple, "JetCA8Puppi" );
 
-
-
-  EvtInfoBranches evtinfo;
+  if( arg.count( "CHS" ) ){
+    ak4cor = GetCorrector( arg, "AK4PFchs" );
+    ak8cor = GetCorrector( arg, "AK8PFchs" );
+    // Setting up CHS Jet info branches
+    ak4jet.Register( oldntuple, "JetInfo" );
+    ak8jet.Register( oldntuple, "JetAK8Info" );
+    ca8jet.Register( oldntuple, "JetCA8Info" );
+  } 
+  if( arg.count( "Puppi" ) ){
+    ak4puppicor = GetCorrector( arg, "AK4PFPuppi" );
+    ak8puppicor = GetCorrector( arg, "AK8PFPuppi" );
+    // Setting up Puppi Jet info branches
+    ak4jetpuppi.Register( oldntuple, "JetInfoPuppi" );
+    ak8jetpuppi.Register( oldntuple, "JetAK8Puppi" );
+    ca8jetpuppi.Register( oldntuple, "JetCA8Puppi" );
+  }
+  EvtInfoBranches evtinfo;                  
   evtinfo.Register( oldntuple, "EvtInfo" );
 
   for( int i = 0; i <  oldntuple->GetEntries() && i != MaxEvent( arg ); ++i ){
@@ -95,28 +101,34 @@ UpdateJEC( TTree* oldntuple, TTree* newntuple, const opt::variables_map& arg )
       cout << "Running event: " <<  i+1 << endl;
     }
     oldntuple->GetEntry( i );
-
-    CorrectJet( ak4jet, ak4cor, evtinfo.Rho );
-    CorrectJet( ak8jet, ak8cor, evtinfo.Rho );
-    CorrectJet( ca8jet, ak8cor, evtinfo.Rho );
-    CorrectJet( ak4jetpuppi, ak4puppicor, evtinfo.Rho );
-    CorrectJet( ak8jetpuppi, ak8puppicor, evtinfo.Rho );
-    CorrectJet( ca8jetpuppi, ak8puppicor, evtinfo.Rho );
-
+    if( arg.count( "CHS" ) ){
+      CorrectJet( ak4jet, ak4cor, evtinfo.Rho );
+      CorrectJet( ak8jet, ak8cor, evtinfo.Rho );
+      CorrectJet( ca8jet, ak8cor, evtinfo.Rho );
+    }
+    if( arg.count( "Puppi" ) ){
+      CorrectJet( ak4jetpuppi, ak4puppicor, evtinfo.Rho );
+      CorrectJet( ak8jetpuppi, ak8puppicor, evtinfo.Rho );
+      CorrectJet( ca8jetpuppi, ak8puppicor, evtinfo.Rho );
+    }
 
     newntuple->Fill();// Adding modified entry to new ntuple
   }
   cout << "Done! "  << endl;
 
   // Cleaning up
-  delete ak4cor.jec;
-  delete ak4cor.jecunc;
-  delete ak8cor.jec;
-  delete ak8cor.jecunc;
-  delete ak4puppicor.jec;
-  delete ak4puppicor.jecunc;
-  delete ak8puppicor.jec;
-  delete ak8puppicor.jecunc;
+  if( arg.count( "CHS" ) ){
+    delete ak4cor.jec;
+    delete ak4cor.jecunc;
+    delete ak8cor.jec;
+    delete ak8cor.jecunc;
+  }
+  if( arg.count( "Puppi" ) ){
+    delete ak4puppicor.jec;
+    delete ak4puppicor.jecunc;
+    delete ak8puppicor.jec;
+    delete ak8puppicor.jecunc;
+  }
 
 }
 

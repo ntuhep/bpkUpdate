@@ -27,6 +27,8 @@ CommonOptions()
     ( "output,o", opt::value<string>(), "Output file to store results" )
     ( "maxevent,m", opt::value<int>()->default_value(10000), "Maximum number of events to process" )
     ( "report,r", opt::value<int>()->default_value(1000), "Report every r events" )
+    ( "CHS",  "Run CHS jets energy correction" )
+    ( "Puppi",  "Run Puppi jets energy correction" )
     ( "help,h", "Print help message" )
   ;
   return common;
@@ -54,6 +56,10 @@ CheckCommon(
   if( !arg.count( "output" ) ){
     cerr << "Output file not specified!"   << endl << CommonOptions() << endl;
     throw std::invalid_argument("No output");
+  }
+  if( !arg.count( "CHS" ) && !arg.count( "Puppi" )){
+    cerr << "Jet type not specified!"   << endl << CommonOptions() << endl;
+    throw std::invalid_argument("No jet type");
   }
 
   return arg;
