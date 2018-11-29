@@ -84,8 +84,7 @@ UpdateJEC( TTree* oldntuple, TTree* newntuple, const opt::variables_map& arg )
     ak4jet.Register( oldntuple, "JetInfo" );
     ak8jet.Register( oldntuple, "JetAK8Info" );
     ca8jet.Register( oldntuple, "JetCA8Info" );
-  } 
-  if( arg.count( "Puppi" ) ){
+  } else if( arg.count( "Puppi" ) ){
     ak4puppicor = GetCorrector( arg, "AK4PFPuppi" );
     ak8puppicor = GetCorrector( arg, "AK8PFPuppi" );
     // Setting up Puppi Jet info branches
@@ -105,8 +104,7 @@ UpdateJEC( TTree* oldntuple, TTree* newntuple, const opt::variables_map& arg )
       CorrectJet( ak4jet, ak4cor, evtinfo.Rho );
       CorrectJet( ak8jet, ak8cor, evtinfo.Rho );
       CorrectJet( ca8jet, ak8cor, evtinfo.Rho );
-    }
-    if( arg.count( "Puppi" ) ){
+    }else if( arg.count( "Puppi" ) ){
       CorrectJet( ak4jetpuppi, ak4puppicor, evtinfo.Rho );
       CorrectJet( ak8jetpuppi, ak8puppicor, evtinfo.Rho );
       CorrectJet( ca8jetpuppi, ak8puppicor, evtinfo.Rho );
@@ -122,8 +120,7 @@ UpdateJEC( TTree* oldntuple, TTree* newntuple, const opt::variables_map& arg )
     delete ak4cor.jecunc;
     delete ak8cor.jec;
     delete ak8cor.jecunc;
-  }
-  if( arg.count( "Puppi" ) ){
+  } else if( arg.count( "Puppi" ) ){
     delete ak4puppicor.jec;
     delete ak4puppicor.jecunc;
     delete ak8puppicor.jec;
