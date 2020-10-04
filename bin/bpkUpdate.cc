@@ -38,11 +38,9 @@ main( int argc, char* argv[] )
   *******************************************************************************/
   // Making old version of ntuples
   TChain* oldntuple     = new TChain( "bprimeKit/root" );
-  TChain* oldntuple_run = new TChain( "bprimeKit/run" );
 
   for( const auto& file : InputFiles( arg ) ){
     oldntuple->Add( file.c_str() );
-    oldntuple_run->Add( file.c_str() );
   }
 
   /*******************************************************************************
@@ -65,19 +63,6 @@ main( int argc, char* argv[] )
   }
   // Saving newntuple to file
   newntuple->AutoSave();
-
-  /*******************************************************************************
-  *******************************************************************************/
-  // Run level tree corrections
-  if( oldntuple_run->GetEntries() ){// Only run if run tree has more than one entry
-    TTree* newntuple_run = oldntuple_run->CloneTree( 0 );
-
-    for( int i = 0; i < oldntuple_run->GetEntries(); ++i ){
-      newntuple_run->Fill();// Filling regardless
-    }
-
-    newntuple_run->AutoSave();
-  }
 
   // Trusting ROOT to autoclean the pointer objects.
   return 0;

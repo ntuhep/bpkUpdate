@@ -67,23 +67,17 @@ UpdateJEC( TTree* oldntuple, TTree* newntuple, const opt::variables_map& arg )
   // Getting jet energy correctors
   // https://twiki.cern.ch/twiki/bin/view/CMSPublic/WorkBookJetEnergyCorrections#JetEnCorFWLite
   JetChanger ak4cor;
-  JetChanger ak8cor;
   JetChanger ak4puppicor;
   JetChanger ak8puppicor;
   JetInfoBranches ak4jet;
-  JetInfoBranches ak8jet;
-  JetInfoBranches ca8jet;
   JetInfoBranches ak4jetpuppi; 
   JetInfoBranches ak8jetpuppi;
   JetInfoBranches ca8jetpuppi;
 
   if( arg.count( "CHS" ) ){
     ak4cor = GetCorrector( arg, "AK4PFchs" );
-    ak8cor = GetCorrector( arg, "AK8PFchs" );
     // Setting up CHS Jet info branches
     ak4jet.Register( oldntuple, "JetInfo" );
-    ak8jet.Register( oldntuple, "JetAK8Info" );
-    ca8jet.Register( oldntuple, "JetCA8Info" );
   }
   if( arg.count( "Puppi" ) ){
     ak4puppicor = GetCorrector( arg, "AK4PFPuppi" );
@@ -103,8 +97,6 @@ UpdateJEC( TTree* oldntuple, TTree* newntuple, const opt::variables_map& arg )
     oldntuple->GetEntry( i );
     if( arg.count( "CHS" ) ){
       CorrectJet( ak4jet, ak4cor, evtinfo.Rho );
-      CorrectJet( ak8jet, ak8cor, evtinfo.Rho );
-      CorrectJet( ca8jet, ak8cor, evtinfo.Rho );
     }
     if( arg.count( "Puppi" ) ){
       CorrectJet( ak4jetpuppi, ak4puppicor, evtinfo.Rho );
@@ -120,8 +112,6 @@ UpdateJEC( TTree* oldntuple, TTree* newntuple, const opt::variables_map& arg )
   if( arg.count( "CHS" ) ){
     delete ak4cor.jec;
     delete ak4cor.jecunc;
-    delete ak8cor.jec;
-    delete ak8cor.jecunc;
   } 
   if( arg.count( "Puppi" ) ){
     delete ak4puppicor.jec;
