@@ -26,7 +26,7 @@ int                      MaxEvent(   const boost::program_options::variables_map
 int                      ReportEvent(const boost::program_options::variables_map& );
 
 // Specific options for JEC related updates
-boost::program_options::options_description JECOptions();
+boost::program_options::options_description JECJEROptions();
 void                                        UpdateJEC( TTree* oldntuple, TTree* newntuple, const boost::program_options::variables_map& );
 
 #endif/* end of include guard: BPKFRAMEWORK_BPKUPDATE_UPDATEOBJECTS */

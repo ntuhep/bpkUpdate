@@ -25,7 +25,7 @@ int
 main( int argc, char* argv[] )
 {
   opt::options_description desc( "Options for updating bprimeKit ntuples" );
-  desc.add( CommonOptions() ).add( JECOptions() );
+  desc.add( CommonOptions() ).add( JECJEROptions() );
 
   opt::variables_map arg;
   try {

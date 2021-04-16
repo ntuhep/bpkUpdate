@@ -11,6 +11,7 @@
 #include "CondFormats/JetMETObjects/interface/JetCorrectionUncertainty.h"
 #include "CondFormats/JetMETObjects/interface/JetCorrectorParameters.h"
 #include "JetMETCorrections/Modules/interface/JetResolution.h"
+#include "CondFormats/JetMETObjects/interface/JetResolutionObject.h"
 
 #include "TTree.h"
 #include "bpkFrameWork/bprimeKit/interface/format.h"
@@ -27,12 +28,14 @@ namespace opt = boost::program_options;
 *   JEC options parsing
 *******************************************************************************/
 opt::options_description
-JECOptions()
+JECJEROptions()
 {
   opt::options_description desc( "JEC related options" );
   desc.add_options()
-    ( "runjec", "Flag to run JEC/JER" )
-    ( "jecversion,j", opt::value<string>(), "JEC/JER versioning to use" )
+    ( "runjec", "Flag to run JEC" )
+    ( "runjer", "Flag to run JER" )
+    ( "jecversion,j",  opt::value<string>()->default_value(""), "JEC versioning to use" )
+    ( "jerversion,r", opt::value<string>()->default_value(""), "JER versioning to use" )
   ;
   return desc;
 }
@@ -40,15 +43,15 @@ JECOptions()
 /*******************************************************************************
 *   Static helper functions for getting results
 *******************************************************************************/
-static bool   CheckJEC( const opt::variables_map& arg );
+static bool   CheckJECJER( const opt::variables_map& arg );
 static string JECVersion( const opt::variables_map& arg );
 
 struct JetChanger
 {
   FactorizedJetCorrector*   jec;
   JetCorrectionUncertainty* jecunc;
-  // JME::JetResolution            jetres;
-  // JME::JetResolutionScaleFactor jetressf;
+  JME::JetResolution*            jer;
+  JME::JetResolutionScaleFactor* jersf;
 };
 
 static JetChanger GetCorrector( const opt::variables_map& arg, const string& jettype );
@@ -59,13 +62,15 @@ static void       CorrectJet( JetInfoBranches&, JetChanger&, const double rho );
 void
 UpdateJEC( TTree* oldntuple, TTree* newntuple, const opt::variables_map& arg )
 {
-  if( !CheckJEC( arg ) ){
+  if( !CheckJECJER( arg ) ){
     cerr << "Skipping over JEC/JER update" << endl;
     return;
   }
 
   // Getting jet energy correctors
   // https://twiki.cern.ch/twiki/bin/view/CMSPublic/WorkBookJetEnergyCorrections#JetEnCorFWLite
+  // Getting jet energy resolution
+  // https://twiki.cern.ch/twiki/bin/view/CMSPublic/WorkBookJetEnergyResolution#Accessing_factors_from_text_file
   JetChanger ak4cor;
   JetChanger ak4puppicor;
   JetChanger ak8puppicor;
@@ -112,12 +117,18 @@ UpdateJEC( TTree* oldntuple, TTree* newntuple, const opt::variables_map& arg )
   if( arg.count( "CHS" ) ){
     delete ak4cor.jec;
     delete ak4cor.jecunc;
+    delete ak4cor.jer;
+    delete ak4cor.jersf;
   } 
   if( arg.count( "Puppi" ) ){
     delete ak4puppicor.jec;
     delete ak4puppicor.jecunc;
+    delete ak4puppicor.jer;
+    delete ak4puppicor.jersf;
     delete ak8puppicor.jec;
     delete ak8puppicor.jecunc;
+    delete ak8puppicor.jer;
+    delete ak8puppicor.jersf;
   }
 
 }
@@ -128,13 +139,20 @@ UpdateJEC( TTree* oldntuple, TTree* newntuple, const opt::variables_map& arg )
 static const string datadir = getenv( "CMSSW_BASE" ) + string( "/src/bpkFrameWork/bpkUpdate/data/" );
 
 bool
-CheckJEC( const opt::variables_map& arg )
+CheckJECJER( const opt::variables_map& arg )
 {
   if( arg.count( "runjec" ) ){
     if( !arg.count( "jecversion" ) ){
-      cerr << "JEC/JER version not specificed!" << endl;
-      cerr << JECOptions() << endl;
+      cerr << "JEC version not specificed!" << endl;
+      cerr << JECJEROptions() << endl;
       throw std::invalid_argument( "Run JEC required but has invalid input" );
+    }
+    return true;
+  } else if( arg.count( "runjer" ) ){
+    if( !arg.count( "jerversion" ) ){
+      cerr << "JER version not specificed!" << endl;
+      cerr << JECJEROptions() << endl;
+      throw std::invalid_argument( "Run JER required but has invalid input" );
     }
     return true;
   } else {
@@ -150,36 +168,70 @@ JECVersion( const opt::variables_map& arg )
   return arg["jecversion"].as<string>();
 }
 
+string
+JERVersion( const opt::variables_map& arg )
+{
+  return arg["jerversion"].as<string>();
+}
+
 /******************************************************************************/
 
 JetChanger
 GetCorrector( const opt::variables_map& arg, const string& jettype  )
 {
+  FactorizedJetCorrector* Jec          = nullptr;
+  JetCorrectionUncertainty* Jecunc     = nullptr;
+  JME::JetResolution* Jer              = nullptr;
+  JME::JetResolutionScaleFactor* Jersf = nullptr;
+
+  //JEC 
   const string l1file  = datadir + JECVersion( arg ) + "/" + JECVersion( arg ) + "_L1FastJet_"+ jettype + ".txt";
   const string l2file  = datadir + JECVersion( arg ) + "/" + JECVersion( arg ) + "_L2Relative_"+ jettype + ".txt";
   const string l3file  = datadir + JECVersion( arg ) + "/" + JECVersion( arg ) + "_L3Absolute_"+ jettype + ".txt";
   const string l23file = datadir + JECVersion( arg ) + "/" + JECVersion( arg ) + "_L2L3Residual_"+ jettype + ".txt";
   const string uncfile = datadir + JECVersion( arg ) + "/" + JECVersion( arg ) + "_Uncertainty_"+ jettype + ".txt";
-  if( !boost::filesystem::exists( l1file ) ||
-      !boost::filesystem::exists( l2file ) ||
-      !boost::filesystem::exists( l3file ) ||
-      !boost::filesystem::exists( l23file ) ){
-    cerr << "Missing files! Please check if following files exists!"  << endl
-         << "\t" << l1file << endl
-         << "\t" << l2file << endl
-         << "\t" << l3file << endl
-         << "\t" << l23file << endl;
-    throw invalid_argument( "Missing file!" );
-  }
-  JetCorrectorParameters ResJetPar( l23file );
-  JetCorrectorParameters L3JetPar( l3file );
-  JetCorrectorParameters L2JetPar( l2file );
-  JetCorrectorParameters L1JetPar( l1file );
 
-  return {
-           new FactorizedJetCorrector( {L1JetPar, L2JetPar, L3JetPar, ResJetPar} ),
-           new JetCorrectionUncertainty( uncfile )
-  };
+  if( JECVersion( arg ) != "" ){
+    if( !boost::filesystem::exists( l1file ) ||
+        !boost::filesystem::exists( l2file ) ||
+        !boost::filesystem::exists( l3file ) ||
+        !boost::filesystem::exists( l23file ) ){
+      cerr << "Missing JEC source files! Please check if following files exists!"  << endl
+           << "\t" << l1file << endl
+           << "\t" << l2file << endl
+           << "\t" << l3file << endl
+           << "\t" << l23file << endl;
+      throw invalid_argument( "Missing file!" );
+    } else {
+
+      JetCorrectorParameters ResJetPar( l23file );
+      JetCorrectorParameters L3JetPar( l3file );
+      JetCorrectorParameters L2JetPar( l2file );
+      JetCorrectorParameters L1JetPar( l1file );
+
+      Jec    = new FactorizedJetCorrector( {L1JetPar, L2JetPar, L3JetPar, ResJetPar} );
+      Jecunc = new JetCorrectionUncertainty( uncfile );
+    }
+  }
+
+  //JER
+  const string resofile   = datadir + JERVersion( arg ) + "/" + JERVersion( arg ) + "_PtResolution_" + jettype + ".txt";
+  const string resosffile = datadir + JERVersion( arg ) + "/" + JERVersion( arg ) + "_SF_" + jettype + ".txt";
+
+  if( JERVersion( arg ) != "" ){
+    if( !boost::filesystem::exists( resofile ) ||
+        !boost::filesystem::exists( resosffile ) ){
+      cerr << "Missing JER source files! Please check if following files exists!"  << endl
+           << "\t" << resofile << endl
+           << "\t" << resosffile << endl;
+      throw invalid_argument( "Missing file!" );
+    } else {
+      Jer    = new JME::JetResolution( resofile );
+      Jersf  = new JME::JetResolutionScaleFactor( resosffile );
+    }
+  }
+
+  return { Jec, Jecunc, Jer, Jersf };
 }
 
 
@@ -189,16 +241,28 @@ void
 CorrectJet( JetInfoBranches& jetinfo, JetChanger& cor, const double rho )
 {
   for( int i = 0; i < jetinfo.Size; ++i ){
-    // Getting Jet energy correction
-    cor.jec->setJetEta( jetinfo.Eta[i] );
-    cor.jec->setJetPt( jetinfo.PtCorrRaw[i] );
-    cor.jec->setJetA( jetinfo.Area[i] );
-    cor.jec->setRho( rho );
-    jetinfo.Unc[i] = cor.jec->getCorrection();
 
-    // Getting jet energy correction uncertainty
-    cor.jecunc->setJetEta( jetinfo.Eta[i] );
-    cor.jecunc->setJetPt( jetinfo.PtCorrRaw[i] * jetinfo.Unc[i] );
-    jetinfo.JesUnc[i] = cor.jecunc->getUncertainty(true);
+    // Getting Jet energy correction and uncertainty
+    if (cor.jec != nullptr){
+      cor.jec->setJetEta( jetinfo.Eta[i] );
+      cor.jec->setJetPt( jetinfo.PtCorrRaw[i] );
+      cor.jec->setJetA( jetinfo.Area[i] );
+      cor.jec->setRho( rho );
+      jetinfo.Unc[i] = cor.jec->getCorrection();
+
+      cor.jecunc->setJetEta( jetinfo.Eta[i] );
+      cor.jecunc->setJetPt( jetinfo.PtCorrRaw[i] * jetinfo.Unc[i] );
+      jetinfo.JesUnc[i] = cor.jecunc->getUncertainty(true);
+    }
+
+    // Getting jet resolution and uncertainty
+    if (cor.jer != nullptr) {
+      JME::JetParameters jet_parameters;
+      jet_parameters.setJetPt( jetinfo.PtCorrRaw[i] * jetinfo.Unc[i] ).setJetEta( jetinfo.Eta[i] ).setRho( rho );
+      jetinfo.JERPt[i] = cor.jer->getResolution( jet_parameters );
+      jetinfo.JERScale[i]     = cor.jersf->getScaleFactor( jet_parameters );
+      jetinfo.JERScaleUp[i]   = cor.jersf->getScaleFactor( jet_parameters, Variation::UP );
+      jetinfo.JERScaleDown[i] = cor.jersf->getScaleFactor( jet_parameters, Variation::DOWN );
+    }
   }
 }
