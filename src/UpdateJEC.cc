@@ -86,7 +86,10 @@ UpdateJEC( TTree* oldntuple, TTree* newntuple, const opt::variables_map& arg )
   }
   if( arg.count( "Puppi" ) ){
     ak4puppicor = GetCorrector( arg, "AK4PFPuppi" );
-    ak8puppicor = GetCorrector( arg, "AK8PFPuppi" );
+    // Follow up https://cms-talk.web.cern.ch/t/jet-energy-corrections-for-full-2024-prompt-data-now-available/109472/1
+    // where "While the corrections are primarily provided for AK4 jets, they are also applicable to AK8 PUPPI jets.".
+    // However, it should be modified as "AK8PFPuppi" if there is a dedicated AK8 correction.
+    ak8puppicor = GetCorrector( arg, "AK4PFPuppi" );
     // Setting up Puppi Jet info branches
     ak4jetpuppi.Register( oldntuple, "JetInfoPuppi" );
     ak8jetpuppi.Register( oldntuple, "JetAK8Puppi" );
@@ -245,6 +248,7 @@ CorrectJet( JetInfoBranches& jetinfo, JetChanger& cor, const double rho )
     // Getting Jet energy correction and uncertainty
     if (cor.jec != nullptr){
       cor.jec->setJetEta( jetinfo.Eta[i] );
+      cor.jec->setJetPhi( jetinfo.Phi[i] );
       cor.jec->setJetPt( jetinfo.PtCorrRaw[i] );
       cor.jec->setJetA( jetinfo.Area[i] );
       cor.jec->setRho( rho );

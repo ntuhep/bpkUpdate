@@ -1,5 +1,6 @@
 <use name="root"/>
 <use name="boost"/>
+<use name="boost_filesystem"/>
 <use name="boost_program_options"/>
 <use name="CondFormats/JetMETObjects"/>
 <use name="JetMETCorrections/Modules"/>
